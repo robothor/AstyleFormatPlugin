@@ -67,14 +67,16 @@ def reformat_text(view, edit):
     """
     if not isEnabled(view): return sublime.status_message('Nothing to tidy!')
 
-    region = sublime.Region(0L, view.size())
-    file_name = write_to_tempfile(view.file_name(), view.substr(region))
+    text_region = sublime.Region(0L, view.size())
+    visible_region = view.visible_region()
+    file_name = write_to_tempfile(view.file_name(), view.substr(text_region))
     command = ["astyle", file_name]
     p = subprocess.Popen(command)
     p.wait()
 
     pretty_code = read_from_tempfile(file_name)
-    view.replace(edit, region, pretty_code)
+    view.replace(edit, text_region, pretty_code)
+    view.show(visible_region)
     sublime.status_message("Reformatted and wrote " + view.file_name())
 
 class AstyleFormatCommand(sublime_plugin.TextCommand):
