@@ -1,9 +1,3 @@
-import os
-import subprocess
-import tempfile
-import sublime
-import sublime_plugin
-
 """
 This is a simple plugin that runs AStyle (http://astyle.sourceforge.net/).  The
 plugin will only run on C/C++/C#/Java programs.  It can operate in two modes:
@@ -15,6 +9,13 @@ Caveats:
 2. astyle will pull its config options from ~/.astylerc (see astyle docs)
 """
 
+import os
+import re
+import subprocess
+import tempfile
+import sublime
+import sublime_plugin
+
 def write_to_tempfile(file_name, lines):
     """
         Create a temporary file and write the text denoted by _lines_ into it.
@@ -23,7 +24,7 @@ def write_to_tempfile(file_name, lines):
 
         Returns the name of the temporary file -- this file is not deleted.
     """
-    basename, extension = os.path.splitext(file_name)
+    _, extension = os.path.splitext(file_name)
     in_file = tempfile.NamedTemporaryFile(suffix=extension, delete=False)
     in_file.writelines(lines)
     in_file.flush()
@@ -42,7 +43,7 @@ def read_from_tempfile(file_name):
     os.remove(file_name)
     return "".join(pretty_code)
 
-def isEnabled(view):
+def is_enabled(view):
     """
         Check if we can work on this file -- astyle only works on c/C++/c#/Java.
 
@@ -65,18 +66,24 @@ def reformat_text(view, edit):
         4. Call astyle on that file
         5. Grab the new content and push them back to the view.
     """
-    if not isEnabled(view): return sublime.status_message('Nothing to tidy!')
+    if not is_enabled(view):
+        return sublime.status_message('Nothing to tidy!')
 
     text_region = sublime.Region(0L, view.size())
-    visible_region = view.visible_region()
     file_name = write_to_tempfile(view.file_name(), view.substr(text_region))
+    # should be good enough!
+    current_region = view.sel()[0]
+
     command = ["astyle", file_name]
-    p = subprocess.Popen(command)
-    p.wait()
+    astyle_process = subprocess.Popen(command)
+    astyle_process.wait()
 
     pretty_code = read_from_tempfile(file_name)
     view.replace(edit, text_region, pretty_code)
-    view.show(visible_region)
+    view.replace(edit,
+                 sublime.Region(current_region.begin(), current_region.begin()),
+                 "")
+    view.show(current_region)
     sublime.status_message("Reformatted and wrote " + view.file_name())
 
 class AstyleFormatCommand(sublime_plugin.TextCommand):
@@ -98,6 +105,4 @@ class AstyleFormatListener(sublime_plugin.EventListener):
         try:
             reformat_text(view, edit)
         finally:
-            self.ignore = True
             view.end_edit(edit)
-            self.ignore = False
