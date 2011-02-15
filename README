@@ -1,0 +1,13 @@
+This is a simple plugin that runs AStyle (http://astyle.sourceforge.net/).  The
+plugin will only run on C/C++/C#/Java programs.  It can operate in two modes:
+1. As a "save-hook" (to use emacs parlance)
+2. As a command ("astyle_format")
+
+Caveats:
+1. astyle must be in your path
+2. astyle will pull its config options from ~/.astylerc (see astyle docs)
+3. Completely untested on Windows -- should be ok on both Linux and Mac as long
+as you have astyle in your PATH
+
+Sample keybinding:
+{ "keys": ["ctrl+alt+f"], "command": "astyle_format" }
